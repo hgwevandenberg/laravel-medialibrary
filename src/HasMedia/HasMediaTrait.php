@@ -3,6 +3,7 @@
 namespace Spatie\Medialibrary\HasMedia;
 
 use DateTimeInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Http\File;
@@ -14,14 +15,17 @@ use Spatie\Medialibrary\Conversion\Conversion;
 use Spatie\Medialibrary\Events\CollectionHasBeenCleared;
 use Spatie\Medialibrary\Exceptions\FileCannotBeAdded\InvalidBase64Data;
 use Spatie\Medialibrary\Exceptions\FileCannotBeAdded\MimeTypeNotAllowed;
+use Spatie\Medialibrary\Exceptions\FileCannotBeAdded\TemporaryUploadDoesNotBelongToCurrentSession;
 use Spatie\Medialibrary\Exceptions\FileCannotBeAdded\UnreachableUrl;
 use Spatie\Medialibrary\Exceptions\MediaCannotBeDeleted;
 use Spatie\Medialibrary\Exceptions\MediaCannotBeUpdated;
 use Spatie\Medialibrary\FileAdder\FileAdder;
 use Spatie\Medialibrary\FileAdder\FileAdderFactory;
+use Spatie\Medialibrary\Helpers\Util;
 use Spatie\Medialibrary\MediaCollection\MediaCollection;
 use Spatie\Medialibrary\MediaRepository;
 use Spatie\Medialibrary\Models\Media;
+use Spatie\MedialibraryPro\Models\TemporaryUpload;
 
 trait HasMediaTrait
 {
@@ -92,6 +96,28 @@ trait HasMediaTrait
     public function addMediaFromRequest(string $key): FileAdder
     {
         return app(FileAdderFactory::class)->createFromRequest($this, $key);
+    }
+
+    /**
+     * Add a a temporary upload to the medialibrary.
+     *
+     * Accept a TemporaryUpload or the uuid of a Media model that belongs to a TemporaryUpload
+     *
+     * @param TemporaryUpload|string $temporaryUpload
+     *
+     * @return \Spatie\Medialibrary\FileAdder\FileAdder
+     */
+    public function addMediaFromTemporaryUpload($temporaryUpload): FileAdder
+    {
+        Util::ensureMedialibraryProInstalled();
+
+        if (is_string($temporaryUpload)) {
+            $mediaItemUuid = $temporaryUpload;
+
+            $temporaryUpload = TemporaryUpload::findByMediaUuid($mediaItemUuid);
+        }
+
+        return app(FileAdderFactory::class)->createFromTemporaryUpload($this, $temporaryUpload);
     }
 
     /**

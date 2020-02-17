@@ -3,12 +3,15 @@
 namespace Spatie\Medialibrary\Tests;
 
 use Carbon\Carbon;
+use CreateMediaTable;
+use CreateTemporaryUploadsTable;
 use Dotenv\Dotenv;
 use File;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Artisan;
 use Orchestra\Testbench\TestCase as Orchestra;
+use Spatie\Medialibrary\Helpers\Util;
 use Spatie\Medialibrary\MedialibraryServiceProvider;
 use Spatie\Medialibrary\Tests\Support\TestModels\TestModel;
 use Spatie\Medialibrary\Tests\Support\TestModels\TestModelWithConversion;
@@ -17,6 +20,7 @@ use Spatie\Medialibrary\Tests\Support\TestModels\TestModelWithConversionsOnOther
 use Spatie\Medialibrary\Tests\Support\TestModels\TestModelWithMorphMap;
 use Spatie\Medialibrary\Tests\Support\TestModels\TestModelWithoutMediaConversions;
 use Spatie\Medialibrary\Tests\Support\TestModels\TestModelWithResponsiveImages;
+use Spatie\MedialibraryPro\MedialibraryProServiceProvider;
 use ZipArchive;
 
 abstract class TestCase extends Orchestra
@@ -75,9 +79,15 @@ abstract class TestCase extends Orchestra
      */
     protected function getPackageProviders($app)
     {
-        return [
+        $serviceProviders =  [
             MedialibraryServiceProvider::class,
         ];
+
+        if (Util::medialibraryProInstalled()) {
+            $serviceProviders[] = MedialibraryProServiceProvider::class;
+        }
+
+        return $serviceProviders;
     }
 
     /**
@@ -131,7 +141,13 @@ abstract class TestCase extends Orchestra
         TestModel::create(['name' => 'test']);
 
         include_once __DIR__.'/../database/migrations/create_media_table.php.stub';
-        (new \CreateMediaTable())->up();
+        (new CreateMediaTable())->up();
+
+        if (Util::medialibraryProInstalled()) {
+            include_once __DIR__ . '/../vendor/spatie/laravel-medialibrary-pro/database/migrations/create_temporary_uploads_table.stub';
+            (new CreateTemporaryUploadsTable())->up();
+
+        }
     }
 
     protected function setUpTempTestFiles()
@@ -147,12 +163,12 @@ abstract class TestCase extends Orchestra
         }
         File::makeDirectory($directory);
     }
-    
+
     public function getTestsPath($suffix = ''): string
     {
         if ($suffix !== '') {
             $suffix = "/{$suffix}";
-            
+
         }
 
         return __DIR__ . $suffix;
@@ -284,5 +300,14 @@ abstract class TestCase extends Orchestra
         }
 
         return false;
+    }
+
+    public function skipIfMedialibraryProNotInstalled()
+    {
+        if (Util::medialibraryProInstalled()) {
+            return;
+        }
+
+        $this->markTestSkipped('This test requires medialibrary-pro to be installed');
     }
 }

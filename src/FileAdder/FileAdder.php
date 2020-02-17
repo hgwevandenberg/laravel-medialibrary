@@ -10,6 +10,7 @@ use Spatie\Medialibrary\Exceptions\FileCannotBeAdded\DiskDoesNotExist;
 use Spatie\Medialibrary\Exceptions\FileCannotBeAdded\FileDoesNotExist;
 use Spatie\Medialibrary\Exceptions\FileCannotBeAdded\FileIsTooBig;
 use Spatie\Medialibrary\Exceptions\FileCannotBeAdded\FileUnacceptableForCollection;
+use Spatie\Medialibrary\Exceptions\FileCannotBeAdded\TemporaryUploadDoesNotBelongToCurrentSession;
 use Spatie\Medialibrary\Exceptions\FileCannotBeAdded\UnknownType;
 use Spatie\Medialibrary\File as PendingFile;
 use Spatie\Medialibrary\Filesystem\Filesystem;
@@ -20,6 +21,7 @@ use Spatie\Medialibrary\ImageGenerators\FileTypes\Image as ImageGenerator;
 use Spatie\Medialibrary\Jobs\GenerateResponsiveImagesJob;
 use Spatie\Medialibrary\MediaCollection\MediaCollection;
 use Spatie\Medialibrary\Models\Media;
+use Spatie\MedialibraryPro\Models\TemporaryUpload;
 use Symfony\Component\HttpFoundation\File\File as SymfonyFile;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
@@ -72,10 +74,10 @@ class FileAdder
         return $this;
     }
 
-    /*
+    /**
      * Set the file that needs to be imported.
      *
-     * @param string|\Symfony\Component\HttpFoundation\File\UploadedFile $file
+     * @param string|\Symfony\Component\HttpFoundation\File\UploadedFile|RemoteFile|TemporaryUpload $file
      *
      * @return $this
      */
@@ -112,6 +114,10 @@ class FileAdder
             $this->setFileName(pathinfo($file->getFilename(), PATHINFO_BASENAME));
             $this->mediaName = pathinfo($file->getFilename(), PATHINFO_FILENAME);
 
+            return $this;
+        }
+
+        if ($file instanceof TemporaryUpload) {
             return $this;
         }
 
@@ -258,6 +264,10 @@ class FileAdder
             return $this->toMediaCollectionFromRemote($collectionName, $diskName);
         }
 
+        if ($this->file instanceof TemporaryUpload) {
+            return $this->toMediaCollectionFromTemporaryUpload($collectionName, $diskName);
+        }
+
         if (! is_file($this->pathToFile)) {
             throw FileDoesNotExist::create($this->pathToFile);
         }
@@ -376,7 +386,7 @@ class FileAdder
         $this->guardAgainstDisallowedFileAdditions($media, $model);
 
         $this->checkGenerateResponsiveImages($media);
-        
+
         $model->media()->save($media);
 
         if ($fileAdder->file instanceof RemoteFile) {
@@ -446,5 +456,13 @@ class FileAdder
         if ($collection) {
             $this->withResponsiveImages();
         }
+    }
+
+    protected function toMediaCollectionFromTemporaryUpload(string $collectionName, string $diskName): Media
+    {
+        /** @var TemporaryUpload $temporaryUpload */
+        $temporaryUpload = $this->file;
+
+        return $temporaryUpload->moveMedia($this->subject, $collectionName, $diskName);
     }
 }
