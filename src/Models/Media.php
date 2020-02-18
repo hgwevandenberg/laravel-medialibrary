@@ -33,7 +33,7 @@ class Media extends Model implements Responsable, Htmlable
 
     protected $guarded = [];
 
-    protected  $casts = [
+    protected $casts = [
         'manipulations' => 'array',
         'custom_properties' => 'array',
         'responsive_images' => 'array',
@@ -282,8 +282,8 @@ class Media extends Model implements Responsable, Htmlable
         }
 
         $loadingAttributeValue = config('medialibrary.default_loading_attribute_value');
+
         if ($conversion !== '') {
-            /** @var Conversion $conversionObject */
             $conversionObject = ConversionCollection::createForMedia($this)->getByName($conversion);
 
             $loadingAttributeValue = $conversionObject->getLoadingAttributeValue();
