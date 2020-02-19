@@ -468,6 +468,12 @@ class FileAdder
         /** @var TemporaryUpload $temporaryUpload */
         $temporaryUpload = $this->file;
 
+        $media = $temporaryUpload->getFirstMedia();
+
+        $media->name = $this->mediaName;
+        $media->custom_properties = $this->customProperties;
+        $media->save();
+
         return $temporaryUpload->moveMedia($this->subject, $collectionName, $diskName);
     }
 }
