@@ -25,6 +25,11 @@ return [
      */
     'media_model' => Spatie\Medialibrary\Models\Media::class,
 
+    /*
+     * The fully qualified class name of the model used for temporary uploads.
+     */
+    'temporary_upload_model' => Spatie\MedialibraryPro\Models\TemporaryUpload::class,
+
     'remote' => [
         /*
          * Any extra headers that should be included when uploading media to
@@ -79,7 +84,7 @@ return [
      * it will use the filename of the original and concatenate the conversion name to it.
      */
     'conversion_file_namer' => \Spatie\Medialibrary\Conversion\DefaultConversionFileNamer::class,
-    
+
     /*
      * The class that contains the strategy for determining a media file's path.
      */
