@@ -25,6 +25,8 @@ use Spatie\Medialibrary\Helpers\Util;
 use Spatie\Medialibrary\MediaCollection\MediaCollection;
 use Spatie\Medialibrary\MediaRepository;
 use Spatie\Medialibrary\Models\Media;
+use Spatie\MedialibraryPro\Dto\PendingMedia;
+use Spatie\MediaLibraryPro\Dto\UploadedFile;
 use Spatie\MedialibraryPro\Models\TemporaryUpload;
 
 trait HasMediaTrait
@@ -103,21 +105,18 @@ trait HasMediaTrait
      *
      * Accept a TemporaryUpload or the uuid of a Media model that belongs to a TemporaryUpload
      *
-     * @param TemporaryUpload|string $temporaryUpload
+     * @param string $temporaryUploadPayload
      *
-     * @return \Spatie\Medialibrary\FileAdder\FileAdder
+     * @return \Spatie\Medialibrary\FileAdder\FileAdder[]
      */
-    public function addMediaFromTemporaryUpload($temporaryUpload): FileAdder
+    public function addMediaFromTemporaryUploads(string $temporaryUploadPayload): Collection
     {
         Util::ensureMedialibraryProInstalled();
 
-        if (is_string($temporaryUpload)) {
-            $mediaItemUuid = $temporaryUpload;
-
-            $temporaryUpload = TemporaryUpload::findByMediaUuid($mediaItemUuid);
-        }
-
-        return app(FileAdderFactory::class)->createFromTemporaryUpload($this, $temporaryUpload);
+        return PendingMedia::createFromPayload($temporaryUploadPayload)
+            ->map(function(PendingMedia $pendingMedia) {
+                return app(FileAdderFactory::class)->createForTemporaryUpload($this, $pendingMedia);
+            });
     }
 
     /**

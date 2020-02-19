@@ -4,6 +4,7 @@ namespace Spatie\Medialibrary\Tests\Feature\FileAdder;
 
 use Illuminate\Http\UploadedFile;
 use Spatie\Medialibrary\Models\Media;
+use Spatie\Medialibrary\Tests\Support\Factories\TemporaryUploadFactory;
 use Spatie\Medialibrary\Tests\TestCase;
 use Spatie\MedialibraryPro\Models\TemporaryUpload;
 
@@ -17,17 +18,14 @@ class AddFromTemporaryUploadTest extends TestCase
 
         $this->skipIfMedialibraryProNotInstalled();
 
-        $fakeUpload = UploadedFile::fake()->image('test.jpg');
-        $this->temporaryUpload = TemporaryUpload::createForFile(
-            $fakeUpload,
-            session()->getId(),
-            'uuid1'
-        );
+        $this->temporaryUpload = (new TemporaryUploadFactory())->create(['uuid' => 'uuid1']);
     }
 
     /** @test */
     public function it_can_a_add_file_from_a_single_temporary_upload()
     {
+        $payload = json_encode([$this->temporaryUpload]);
+
         $this->testModel
             ->addMediaFromTemporaryUpload($this->temporaryUpload)
             ->toMediaCollection();
