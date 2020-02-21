@@ -100,6 +100,13 @@ trait HasMediaTrait
         return app(FileAdderFactory::class)->createFromRequest($this, $key);
     }
 
+    public function addMediaFromTemporaryUpload(string $temporaryUploadPayload): FileAdder
+    {
+        $pendingMedia = PendingMedia::createFromPayload($temporaryUploadPayload)->first();
+
+        return app(FileAdderFactory::class)->createForTemporaryUpload($this, $pendingMedia);
+    }
+
     /**
      * Add a a temporary upload to the medialibrary.
      *
@@ -109,7 +116,7 @@ trait HasMediaTrait
      *
      * @return \Spatie\Medialibrary\FileAdder\FileAdder[]
      */
-    public function addMediaFromTemporaryUploads(string $temporaryUploadPayload): Collection
+    public function addMultipleMediaFromTemporaryUploads(string $temporaryUploadPayload): Collection
     {
         Util::ensureMedialibraryProInstalled();
 
